@@ -35,24 +35,31 @@ Year = num2str(ydoy(1,1));
 doy  = num2str(ydoy(1,2),'%.3d');
     
 % Check NAV file \ Get online ephemeris
-n = dir([rinex_path '*' r_o_name(end-7:end-1) 'n']);
+if isempty(r_n_name)
+    n   = dir([rinex_path '*' doy '0.' Year(3:4) 'n']);
+    if isempty(n)  % Download Navigation file
+        try
+            nav_filename   = ['brdc' doy '0.' Year(3:4) 'n.gz'];
+            disp(['Download NAV RINEX file ' nav_filename])
+            % download nav file
+            source1 = ['ftp://gdc.cddis.eosdis.nasa.gov/pub/gps/data/daily/' Year '/brdc/' nav_filename];
+            cd(rinex_path)
+            nav_dl_cmd = ['curl -u anonymous:cssrg.telecom@gmail.com -O --ftp-ssl ' source1];
 
-if isempty(n) % Download Navigation file
-    try
-        nav_filename = [n_name doy '0.' Year(3:4) 'n.Z'];
-        disp(['Download NAV RINEX file ' nav_filename])
-        % download nav file
-        nav_dl_cmd = ['curl.exe -s -v -O --retry 50 --retry-max-time 0 ftp://anonymous:anonymous@cddis.gsfc.nasa.gov/pub/gps/data/daily/' Year '/' doy '/' Year(3:4) 'n/' nav_filename];
-        system(nav_dl_cmd)
-        % unzip nav file
-        nav_uz_cmd    = ['gzip.exe -d ' nav_filename];
-        system(nav_uz_cmd)
-        n = dir([rinex_path nav_filename(1:end-2)]);
+            % nav_dl_cmd = ['curl.exe -s -v -O --retry 50 --retry-max-time 0 ftp://anonymous:anonymous@cddis.gsfc.nasa.gov/pub/gps/data/daily/' Year '/' doy '/' Year(3:4) 'n/' nav_filename];
+            system(nav_dl_cmd)
+            % unzip nav file
+            nav_uz_cmd    = ['gzip.exe -d ' nav_filename];
+            system(nav_uz_cmd)
+            n = dir([rinex_path nav_filename(1:end-2)]);
+            r_n_name = n.name;
+            disp(['Nav file: ' r_n_name ' is downloaded'])
+        catch
+            cd(current_path)
+            error(['error to download Nav file: ' nav_filename '. Please edit new Nav name in **readrinex211**'])
+        end
+    else
         r_n_name = n.name;
-        disp(['Nav file: ' r_n_name ' is downloaded'])
-    catch
-        cd(current_path)
-        error(['error to download Nav file: ' n_name '. Please edit new Nav name in **readrinex211**'])
     end
 end
 
@@ -62,3 +69,4 @@ end
     
 cd(current_path)
 end
+
