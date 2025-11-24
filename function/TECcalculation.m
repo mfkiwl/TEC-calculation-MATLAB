@@ -51,17 +51,23 @@ prm.IPP_long         = nan(86400,32); % IPP longitude
 
 %% 2. TEC calculation
 %== Satellte index
-Sat_obs = unique(nav.index);
+Sat_obs = unique(obs.index);
 for i = 1 : length(Sat_obs) % GPS 1 - 32
     disp(['PRN# ... ' num2str(Sat_obs(i)) ' ...'])
-    % try
+    try
     PRN = Sat_obs(i);
     Sat  = find(obs.index == PRN);
     Time = obs.epoch(Sat)+((obs.date(4)*60*60)+(obs.date(5)*60)+obs.date(6));
+    ind = 1:length(Time);
+    ind(Time==0) = []; % crop Time
+    ind(Time==86400) = [];
     
     % 2.1 Read pseudorange from observation file
         % Pseudorange C/A code    :L1   (m)
     C1   = obs.data(Sat,ismember(obs.type,'C1'));
+    if isempty(C1)
+        C1   = obs.data(Sat,ismember(obs.type,'P1'));
+    end
         % Pseudorange P code      :L2   (m)
     P2 = obs.data(Sat,ismember(obs.type,'P2'));
         % Carrier Phase in length :L1   (m)
@@ -70,20 +76,20 @@ for i = 1 : length(Sat_obs) % GPS 1 - 32
     L2 = lambda2*obs.data(Sat,ismember(obs.type,'L2'));
     
     % 2.2 Calculate elevation angle
-    [satpos,~]  = satpos_xyz_sbias(Time,PRN,nav.eph,nav.index,C1);
+    [satpos,~]  = satpos_xyz_sbias(Time(ind),PRN,nav.eph,nav.index,C1(ind));
     % elevation angle and Azimulth
-    [prm.elevation(Time+1,PRN),prm.azimuth(Time+1,PRN)] = calelevation(satpos',refpos');
+    [prm.elevation(Time(ind),PRN),prm.azimuth(Time(ind),PRN)] = calelevation(satpos',refpos');
 
     % 2.3 Calculate STEC
         %===== STEC Pseudorange
-    STECp(Time+1,PRN) = k*(P2-C1);
+    STECp(Time(ind),PRN) = k*(P2(ind)-C1(ind));
         %===== STEC Carrier phase
-    STECl(Time+1,PRN) = k*(L1-L2);
-    Times(Time+1,PRN) = Time+1;
-    % catch
-        % disp(['PRN# ... ' num2str(Sat_obs(i)) '... error ...'])
-        % continue
-    % end
+    STECl(Time(ind),PRN) = k*(L1(ind)-L2(ind));
+    Times(Time(ind),PRN) = Time(ind);
+    catch
+        disp(['PRN# ... ' num2str(Sat_obs(i)) '... error ...'])
+        continue
+    end
 end
 
     % 2.4 elevation angle cutoff <15 degree
@@ -146,9 +152,14 @@ DCB.rcv     = (rcv_bias_ns*10^-9*(c*(f1^2*f2^2/(A*(f1^2-f2^2)*10^16))));
 STEC_completed = (TEC.withrcvbias - DCB.rcv);
 VTEC_completed  = (TEC.withrcvbias - DCB.rcv).*slant_factor;
 % Using zero adjust TEC (Minimum TEC is Zero)
-tec_min = nanmin(STEC_completed);
-TEC.slant    =  STEC_completed + abs(nanmin(tec_min));
-TEC.vertical = VTEC_completed  + abs(nanmin(tec_min));
+if sum(nanmin(STEC_completed)<0)>=1 % delay should not below than zero
+    tec_min = nanmin(nanmin(STEC_completed));
+    TEC.slant    =  STEC_completed + abs(tec_min);
+    TEC.vertical = VTEC_completed  + abs(tec_min);
+else
+    TEC.slant    =  STEC_completed;
+    TEC.vertical = VTEC_completed;
+end
 
 %% 3. ROTI calculation
 disp('Estimate the receiver bias ....')
@@ -170,3 +181,4 @@ filename = [S_path 'TEC_' obs.station '_' year '_' month '_' date];
 save(filename,name1,name2,name3,name4,'refpos')
 disp(['Complete to Calculate TEC at ' obs.station ' station'])
 end
+
