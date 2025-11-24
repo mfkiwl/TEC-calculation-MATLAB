@@ -13,8 +13,8 @@ function rcv_bias_ns = rcv_bias_ma(sp,ep,step,STEC_removesatbias,slant_factor)
 % STEC_removesatbias = STEC without satellite DCB
 %      slant_factor  = Slant factor (STEC to VTEC convertor)
 
-STEC_removesatbias = STEC_removesatbias(1:30:end,:);
-slant_factor = slant_factor(1:30:end,:);
+STEC_removesatbias = STEC_removesatbias(30:30:end,:);
+slant_factor = slant_factor(30:30:end,:);
 br = [sp:step:ep];
 flac = 1;
 f1 = 1575.42*10^6;          %   f1 = 1575.42 MHz (L1)
@@ -43,4 +43,5 @@ for loop=0:5
     rcv_bias_ns = br(Y,Z);
     flac = 0;
 %     disp(rcv_bias_ns);
+
 end
