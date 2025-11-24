@@ -9,7 +9,7 @@ gray   = [.5 .5 .5];
 red    = [1 0 0];
 blue   = [0 0 1];
 ltgray = [.8 .8 .8];
-Time_TEC  = (0:86399)/3600;      %   Time rate 1 second
+% Time_TEC  = (0:86399)/3600;      %   Time rate 1 second
 
 
 %% Figure#1 TEC and ROTI
@@ -35,11 +35,13 @@ eval(['TEC   = ' name1 ';'])
 eval(['DCB   = ' name2 ';'])
 eval(['ROTI  = ' name3 ';'])
 eval(['prm   = ' name4 ';'])
+Time_TEC  = nanmax(prm.Times');  
+Time_TEC(isnan(Time_TEC)) = [];
 
 subplot(211)
-plot(Time_TEC,TEC.slant,'.');
+plot(Time_TEC/3600,TEC.slant(Time_TEC,:),'.');
 hold on
-plot(Time_TEC,TEC.vertical,'.','LineWidth',1,'Color',[0 0 0]);
+plot(Time_TEC/3600,TEC.vertical(Time_TEC,:),'.','LineWidth',1,'Color',[0 0 0]);
 hold off
 xlim([0 24])
 ylim([0 inf])
@@ -50,7 +52,7 @@ title('Total Electron Content (TEC)')
 text(0.5,nanmin(ylim)+2,'CSSRG Laboratory@KMITL, Thailand.','Color',[0 0 0],'FontSize',6)
 
 subplot(212)
-plot(Time_TEC,ROTI,'k')
+plot(Time_TEC/3600,ROTI(Time_TEC,:))
 axis([0 24 0 1])
 grid on
 xlabel('Time (UTC)')
@@ -107,13 +109,13 @@ catch
 end
 
 subplot(211)
-plot(Time_TEC,TEC.withbias,'.');
+plot(Time_TEC/3600,TEC.withbias(Time_TEC,:),'.');
 xlim([0 24])
 grid on
 ylabel('TEC (TECU)')
 title('STEC with satellite and receiver DCBs')
 subplot(212)
-plot(Time_TEC,TEC.withrcvbias,'.');
+plot(Time_TEC/3600,TEC.withrcvbias(Time_TEC,:),'.');
 xlim([0 24])
 grid on
 ylabel('TEC (TECU)')
@@ -133,13 +135,13 @@ catch
       'HorizontalAlignment', 'Center', 'VerticalAlignment', 'Bottom' ) ;
 end
 subplot(211)
-plot(Time_TEC,TEC.STECp,'.');
+plot(Time_TEC/3600,TEC.STECp(Time_TEC,:),'.');
 xlim([0 24])
 grid on
 ylabel('TEC (TECU)')
 title('STEC from psudorange code calculation')
 subplot(212)
-plot(Time_TEC,TEC.STECl,'.');
+plot(Time_TEC/3600,TEC.STECl(Time_TEC,:),'.');
 xlim([0 24])
 grid on
 ylabel('TEC (TECU)')
@@ -149,3 +151,4 @@ movegui(main4,'northeast');
 end
 
 end
+
